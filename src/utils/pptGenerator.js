@@ -141,13 +141,21 @@ export async function generatePPT(images, settings, filename = 'converted') {
         addImageSlide(pptx, imageData, fitMode, slideSize);
     }
 
-    // Generate the file
-    const pptxBlob = await pptx.write({ outputType: 'blob' });
+    // Generate the file with proper MIME type
+    const pptxBlob = await pptx.write({
+        outputType: 'blob',
+        compression: true
+    });
+
+    // Create a new blob with explicit MIME type to prevent .zip extension
+    const properBlob = new Blob([pptxBlob], {
+        type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+    });
 
     // Download the file
-    saveAs(pptxBlob, `${filename}.pptx`);
+    saveAs(properBlob, `${filename}.pptx`);
 
-    return pptxBlob;
+    return properBlob;
 }
 
 /**
