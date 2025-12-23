@@ -1,0 +1,90 @@
+.download-section {
+    margin-top: 2rem;
+}
+
+.download-card {
+    text-align: center;
+    padding: 3rem 2rem;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+    border: 2px solid rgba(139, 92, 246, 0.2);
+}
+
+.download-icon {
+    display: inline-block;
+    margin-bottom: 1.5rem;
+    animation: successPulse 2s ease-in-out infinite;
+}
+
+.download-icon svg {
+    stroke: #10B981;
+    filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.3));
+}
+
+@keyframes successPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+.download-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    background: var(--success-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.download-subtitle {
+    font-size: 1.125rem;
+    margin-bottom: 1rem;
+}
+
+.download-size {
+    margin-bottom: 1.5rem;
+}
+
+.download-btn {
+    font-size: 1.125rem;
+    padding: 1rem 2.5rem;
+    margin-top: 1rem;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        box-shadow: var(--shadow-md);
+    }
+
+    50% {
+        box-shadow: var(--shadow-glow);
+    }
+}
+
+@media (max-width: 768px) {
+    .download-card {
+        padding: 2rem 1rem;
+    }
+
+    .download-title {
+        font-size: 1.5rem;
+    }
+
+    .download-subtitle {
+        font-size: 1rem;
+    }
+
+    .download-icon svg {
+        width: 48px;
+        height: 48px;
+    }
+}
