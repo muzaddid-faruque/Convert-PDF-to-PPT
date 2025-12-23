@@ -129,6 +129,37 @@ export default function ConversionSettings({ settings, onSettingsChange, pageCou
                         </div>
                     </div>
                 )}
+
+                {/* Extract Editable Text */}
+                <div className="setting-item">
+                    <label className="setting-label">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Extract Editable Text
+                    </label>
+                    <div className="toggle-container">
+                        <label className="toggle-switch">
+                            <input
+                                type="checkbox"
+                                checked={localSettings.extractText || false}
+                                onChange={(e) => handleChange('extractText', e.target.checked)}
+                            />
+                            <span className="toggle-slider"></span>
+                        </label>
+                        <span className="toggle-label">
+                            {localSettings.extractText ? 'Enabled' : 'Disabled'}
+                        </span>
+                    </div>
+                    {localSettings.extractText && (
+                        <div className="setting-hint">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span className="text-xs">Text will be editable in PowerPoint (slower conversion)</span>
+                        </div>
+                    )}
+                </div>
             </div>
 
             <div className="settings-info">

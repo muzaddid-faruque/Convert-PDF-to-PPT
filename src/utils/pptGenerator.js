@@ -82,36 +82,130 @@ function calculateImageDimensions(imgWidth, imgHeight, slideWidth, slideHeight, 
 }
 
 /**
- * Add an image slide to the presentation
+ * Map PDF font names to PowerPoint-compatible fonts
+ * @param {string} pdfFontName - PDF font name
+ * @returns {string} PowerPoint font name
+ */
+function mapPDFFont(pdfFontName) {
+    // Common PDF to PowerPoint font mappings
+    const fontMap = {
+        'Times-Roman': 'Times New Roman',
+        'Times-Bold': 'Times New Roman',
+        'Times-Italic': 'Times New Roman',
+        'Times-BoldItalic': 'Times New Roman',
+        'Helvetica': 'Arial',
+        'Helvetica-Bold': 'Arial',
+        'Helvetica-Oblique': 'Arial',
+        'Helvetica-BoldOblique': 'Arial',
+        'Courier': 'Courier New',
+        'Courier-Bold': 'Courier New',
+        'Courier-Oblique': 'Courier New',
+        'Courier-BoldOblique': 'Courier New',
+        'Symbol': 'Symbol',
+        'ZapfDingbats': 'Wingdings'
+    };
+
+    // Check for exact match
+    if (fontMap[pdfFontName]) {
+        return fontMap[pdfFontName];
+    }
+
+    // Check for partial match (e.g., "Arial-BoldMT" -> "Arial")
+    for (const [pdfFont, pptFont] of Object.entries(fontMap)) {
+        if (pdfFontName.includes(pdfFont) || pdfFont.includes(pdfFontName)) {
+            return pptFont;
+        }
+    }
+
+    // Default fallback
+    return 'Arial';
+}
+
+/**
+ * Add text overlays to a slide
+ * @param {Object} slide - PptxGenJS slide object
+ * @param {Object} textContent - Text content with positioning data
+ * @param {Object} imageDimensions - Image dimensions and position
+ * @param {Object} slideSize - Slide size object
+ */
+function addTextOverlays(slide, textContent, imageDimensions, slideSize) {
+    if (!textContent || !textContent.items || textContent.items.length === 0) {
+        return;
+    }
+
+    const { pageWidth, pageHeight, items } = textContent;
+    const { width: imgWidth, height: imgHeight, x: imgX, y: imgY } = imageDimensions;
+
+    // Calculate scale factors
+    const scaleX = imgWidth / pageWidth;
+    const scaleY = imgHeight / pageHeight;
+
+    // Group text items by line (approximate)
+    items.forEach(item => {
+        if (!item.str || item.str.trim() === '') {
+            return; // Skip empty text
+        }
+
+        // Transform coordinates from PDF space to PowerPoint space
+        const textX = imgX + (item.x * scaleX);
+        const textY = imgY + (item.y * scaleY);
+        const textWidth = item.width * scaleX;
+        const textHeight = item.height * scaleY;
+        const fontSize = Math.max(6, Math.min(72, item.fontSize * scaleY * 0.75)); // Scale font size
+
+        // Add text box
+        slide.addText(item.str, {
+            x: textX,
+            y: textY,
+            w: textWidth,
+            h: textHeight,
+            fontSize: fontSize,
+            fontFace: mapPDFFont(item.fontName),
+            color: '000000', // Black text
+            align: 'left',
+            valign: 'top',
+            fill: { color: 'FFFFFF', transparency: 100 }, // Transparent background
+            line: { type: 'none' } // No border
+        });
+    });
+}
+
+/**
+ * Add an image slide to the presentation (with optional text overlay)
  * @param {Object} pptx - PptxGenJS presentation object
- * @param {Object} imageData - Image data object
+ * @param {Object} pageData - Page data object (image + optional text)
  * @param {string} fitMode - Fit mode ('fit', 'fill', 'original')
  * @param {string} slideSize - Slide size preset
  */
-export function addImageSlide(pptx, imageData, fitMode = 'fit', slideSize = '16:9') {
+export function addImageSlide(pptx, pageData, fitMode = 'fit', slideSize = '16:9') {
     const slide = pptx.addSlide();
     const size = SLIDE_SIZES[slideSize] || SLIDE_SIZES['16:9'];
 
-    // Calculate dimensions
+    // Calculate dimensions for the image
     const dimensions = calculateImageDimensions(
-        imageData.width,
-        imageData.height,
+        pageData.width,
+        pageData.height,
         size.width,
         size.height,
         fitMode
     );
 
-    // Add image to slide
+    // Add image as background
     slide.addImage({
-        data: imageData.dataUrl,
+        data: pageData.dataUrl,
         x: dimensions.x,
         y: dimensions.y,
         w: dimensions.width,
         h: dimensions.height,
     });
 
+    // Add text overlays if available
+    if (pageData.textContent) {
+        addTextOverlays(slide, pageData.textContent, dimensions, size);
+    }
+
     // Add page number in bottom right
-    slide.addText(`${imageData.pageNumber}`, {
+    slide.addText(`${pageData.pageNumber}`, {
         x: size.width - 0.5,
         y: size.height - 0.3,
         w: 0.4,

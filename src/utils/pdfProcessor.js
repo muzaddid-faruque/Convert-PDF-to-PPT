@@ -67,16 +67,61 @@ export async function renderPageToImage(page, scale = 2, format = 'png') {
 }
 
 /**
- * Extract all pages from a PDF as images
+ * Extract text content from a PDF page
+ * @param {Object} page - PDF page object
+ * @param {number} scale - Scale factor (should match image rendering scale)
+ * @returns {Promise<Object>} Text content with positioning data
+ */
+export async function extractTextFromPage(page, scale = 2) {
+    const viewport = page.getViewport({ scale });
+    const textContent = await page.getTextContent();
+
+    // Transform text items to include proper positioning
+    const textItems = textContent.items.map(item => {
+        // Get transform matrix
+        const tx = item.transform;
+
+        return {
+            str: item.str,
+            // Position (x, y) from transform matrix
+            x: tx[4],
+            y: viewport.height - tx[5], // Flip Y coordinate
+            width: item.width,
+            height: item.height,
+            // Font information
+            fontName: item.fontName,
+            // Calculate font size from transform matrix
+            fontSize: Math.sqrt(tx[2] * tx[2] + tx[3] * tx[3]),
+            // Direction (for rotated text)
+            dir: item.dir || 'ltr'
+        };
+    });
+
+    return {
+        items: textItems,
+        pageWidth: viewport.width,
+        pageHeight: viewport.height
+    };
+}
+
+/**
+ * Extract all pages from a PDF as images (and optionally text)
  * @param {Object} pdf - PDF document object
  * @param {Object} settings - Conversion settings
  * @param {Function} onProgress - Progress callback function
- * @returns {Promise<Array>} Array of image objects
+ * @returns {Promise<Array>} Array of page objects with images and optional text
  */
 export async function extractAllPages(pdf, settings, onProgress) {
-    const { quality = 2, pageRange = 'all', startPage = 1, endPage = null } = settings;
+    const {
+        quality = 2,
+        pageRange = 'all',
+        startPage = 1,
+        endPage = null,
+        extractText = false // New option for text extraction
+    } = settings;
+
     const totalPages = pdf.numPages;
-    const images = [];
+    const pages = [];
 
     // Determine which pages to process
     let pagesToProcess = [];
@@ -92,11 +137,20 @@ export async function extractAllPages(pdf, settings, onProgress) {
     for (let i = 0; i < pagesToProcess.length; i++) {
         const pageNum = pagesToProcess[i];
         const page = await pdf.getPage(pageNum);
+
+        // Always render the image
         const imageData = await renderPageToImage(page, quality, 'png');
 
-        images.push({
+        // Optionally extract text
+        let textContent = null;
+        if (extractText) {
+            textContent = await extractTextFromPage(page, quality);
+        }
+
+        pages.push({
             pageNumber: pageNum,
-            ...imageData
+            ...imageData,
+            textContent: textContent // Will be null if extractText is false
         });
 
         // Report progress
@@ -105,12 +159,13 @@ export async function extractAllPages(pdf, settings, onProgress) {
                 current: i + 1,
                 total: pagesToProcess.length,
                 percentage: Math.round(((i + 1) / pagesToProcess.length) * 100),
-                currentPage: pageNum
+                currentPage: pageNum,
+                extractingText: extractText
             });
         }
     }
 
-    return images;
+    return pages;
 }
 
 /**

@@ -18,7 +18,8 @@ function App() {
         fitMode: 'fit',
         pageRange: 'all',
         startPage: 1,
-        endPage: null
+        endPage: null,
+        extractText: false
     });
     const [processing, setProcessing] = useState(false);
     const [progress, setProgress] = useState(null);
@@ -104,7 +105,8 @@ function App() {
             fitMode: 'fit',
             pageRange: 'all',
             startPage: 1,
-            endPage: null
+            endPage: null,
+            extractText: false
         });
     };
 
