@@ -141,21 +141,33 @@ export async function generatePPT(images, settings, filename = 'converted') {
         addImageSlide(pptx, imageData, fitMode, slideSize);
     }
 
-    // Generate the file with proper MIME type
-    const pptxBlob = await pptx.write({
-        outputType: 'blob',
-        compression: true
-    });
+    try {
+        // For mobile compatibility, use base64 then convert to blob
+        const base64 = await pptx.write({ outputType: 'base64' });
 
-    // Create a new blob with explicit MIME type to prevent .zip extension
-    const properBlob = new Blob([pptxBlob], {
-        type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-    });
+        // Convert base64 to binary
+        const binaryString = atob(base64);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
 
-    // Download the file
-    saveAs(properBlob, `${filename}.pptx`);
+        // Create blob with explicit MIME type
+        const blob = new Blob([bytes], {
+            type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+        });
 
-    return properBlob;
+        // Ensure filename doesn't already have .pptx extension
+        const cleanFilename = filename.endsWith('.pptx') ? filename : `${filename}.pptx`;
+
+        // Download the file
+        saveAs(blob, cleanFilename);
+
+        return blob;
+    } catch (error) {
+        console.error('Error generating PowerPoint:', error);
+        throw error;
+    }
 }
 
 /**
